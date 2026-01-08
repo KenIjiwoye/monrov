@@ -5,13 +5,13 @@
 - **Priority**: High
 - **Dependencies**: FOUND-003, PROF-001
 - **Phase**: MVP (Phase 1)
-- **Parallel Work**: Can run in parallel with AUTH-004, AUTH-006
+- **Parallel Work**: Can run in parallel with AUTH-006
 
 ## Description
 Implement the logout functionality for 231Booking that allows users to securely sign out of their accounts. This includes the logout action, confirmation dialog, and proper session cleanup.
 
 ## Context
-Users need to be able to log out from their accounts for security, especially on shared devices. The logout should clear all session data, remove cached user information, and redirect to the login screen.
+Users need to be able to log out from their accounts for security, especially on shared devices. The logout should clear all session data, remove cached user information, and redirect to the login screen. With OTP-based authentication, logout simply ends the session - users can always log back in by requesting a new OTP.
 
 ## Implementation Requirements
 
@@ -90,7 +90,7 @@ export function LogoutDialog({
                 color="$gray500"
                 textAlign="center"
               >
-                Are you sure you want to log out of your account?
+                Are you sure you want to log out? You can always log back in with your email or phone number.
               </AlertDialog.Description>
             </YStack>
 
@@ -146,10 +146,10 @@ export function useLogout() {
     setError(null);
 
     try {
-      // Clear all cached data
+      // Clear all cached data first
       queryClient.clear();
 
-      // Logout from Appwrite
+      // Logout from Appwrite (deletes current session)
       await logout();
 
       // Navigate to login
@@ -239,7 +239,7 @@ export default function ProfileScreen() {
                   {user?.name || 'User'}
                 </Text>
                 <Text fontSize="$3" color="$gray500">
-                  {user?.email}
+                  {user?.email || user?.phone}
                 </Text>
               </YStack>
             </XStack>
@@ -290,74 +290,49 @@ export default function ProfileScreen() {
 }
 ```
 
-### 4. Settings Menu Item Alternative
+### 4. Auth Context Logout Function
 
-For apps that prefer logout in settings:
-
-**File**: `app/settings/index.tsx` (alternative placement)
+**File**: `lib/auth/AuthContext.tsx` (logout function)
 
 ```typescript
-// ... other imports
-import { LogoutDialog } from '@/components/LogoutDialog';
-import { useLogout } from '@/hooks/useLogout';
-
-export default function SettingsScreen() {
-  const { logout, isLoading } = useLogout();
-  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-
-  return (
-    <>
-      {/* ... other settings content ... */}
-
-      {/* Danger Zone */}
-      <YStack gap="$3" marginTop="$6">
-        <Text fontSize="$3" color="$gray500" fontWeight="500">
-          Account
-        </Text>
-
-        <Button
-          variant="outline"
-          borderColor="$error"
-          onPress={() => setShowLogoutDialog(true)}
-        >
-          <XStack gap="$2" alignItems="center">
-            <LogOut size={18} color="$error" />
-            <Text color="$error">Log Out</Text>
-          </XStack>
-        </Button>
-      </YStack>
-
-      <LogoutDialog
-        open={showLogoutDialog}
-        onOpenChange={setShowLogoutDialog}
-        onConfirm={logout}
-        isLoading={isLoading}
-      />
-    </>
-  );
-}
+const logout = async () => {
+  setIsLoading(true);
+  try {
+    // Delete current session from Appwrite
+    await account.deleteSession('current');
+  } catch (error) {
+    // Session might already be invalid, continue with local cleanup
+    console.warn('Logout API error (continuing with local cleanup):', error);
+  } finally {
+    // Always clear local session storage
+    await sessionStorage.clearSession();
+    setUser(null);
+    setIsLoading(false);
+  }
+};
 ```
 
 ## Visual Design Guidelines
 
 **Logout Confirmation Dialog:**
 ```
-┌─────────────────────────────────────────────────┐
-│                                                 │
-│                   [→]                           │
-│                (icon)                           │
-│                                                 │
-│                Log Out?                         │
-│                                                 │
-│    Are you sure you want to log out of         │
-│              your account?                      │
-│                                                 │
-│  ┌─────────────┐    ┌─────────────────┐        │
-│  │   Cancel    │    │    Log Out      │        │
-│  └─────────────┘    └─────────────────┘        │
-│     (outline)           (red/danger)            │
-│                                                 │
-└─────────────────────────────────────────────────┘
++--------------------------------------------------+
+|                                                  |
+|                   [->]                           |
+|                 (logout icon)                    |
+|                                                  |
+|                Log Out?                          |
+|                                                  |
+|    Are you sure you want to log out?            |
+|    You can always log back in with your         |
+|    email or phone number.                       |
+|                                                  |
+|  +------------------+  +-------------------+    |
+|  |     Cancel       |  |     Log Out      |    |
+|  +------------------+  +-------------------+    |
+|      (outline)            (red/danger)          |
+|                                                  |
++--------------------------------------------------+
 ```
 
 ## Acceptance Criteria
@@ -366,9 +341,10 @@ export default function SettingsScreen() {
 - [ ] Tapping logout shows confirmation dialog
 - [ ] Cancel dismisses dialog without logging out
 - [ ] Confirm logs out and redirects to login
-- [ ] All cached data cleared on logout
+- [ ] All cached data cleared on logout (TanStack Query cache)
+- [ ] Local session storage cleared
 - [ ] Loading state shown during logout
-- [ ] Logout works even if network fails
+- [ ] Logout works even if network/API fails (local cleanup still happens)
 - [ ] Session properly destroyed in Appwrite
 - [ ] User cannot navigate back to authenticated screens after logout
 
@@ -380,9 +356,10 @@ export default function SettingsScreen() {
 - [ ] Confirm button triggers logout
 - [ ] Loading spinner shows during logout
 - [ ] Redirects to login screen
-- [ ] Cannot use back navigation to return
+- [ ] Cannot use back navigation to return to app
 - [ ] Cache cleared (fresh data on next login)
 - [ ] Works offline (local session cleared)
+- [ ] Multiple rapid taps don't cause issues
 
 ## Files to Create/Modify
 
@@ -390,18 +367,22 @@ export default function SettingsScreen() {
 |------|--------|-------------|
 | `components/LogoutDialog.tsx` | Create | Logout confirmation dialog |
 | `hooks/useLogout.ts` | Create | Logout hook with cache clearing |
+| `hooks/index.ts` | Modify | Export useLogout |
 | `app/(tabs)/profile.tsx` | Modify | Add logout button and dialog |
 
 ## Files to Reference
 
 - `lib/auth/AuthContext.tsx` - logout function (FOUND-003)
+- `lib/auth/sessionStorage.ts` - clearSession function (AUTH-006)
 - `lib/queryClient.ts` - Query client for cache clearing (FOUND-001)
 
 ## Notes for AI Agent
 
 - Always clear TanStack Query cache on logout to prevent stale data
-- The logout should work even if the API call fails (local cleanup)
+- The logout should work even if the API call fails (local cleanup is most important)
 - Use AlertDialog from Tamagui for native-feeling confirmation
 - Consider adding haptic feedback on logout button press
 - Ensure the dialog is accessible (keyboard navigable, screen reader friendly)
 - The danger variant button should have red/error styling
+- With OTP auth, logging out is simpler - users just request a new OTP to log back in
+- Display either email or phone in the profile based on what the user signed up with

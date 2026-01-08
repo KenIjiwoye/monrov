@@ -27,14 +27,19 @@ This directory contains all implementation tickets for the 231Booking mobile app
 | [FOUND-006](./FOUND-006-state-api-layer.md) | State Management & API Layer | High | FOUND-001, FOUND-003 |
 
 ### Authentication (AUTH) - MVP Phase 1
+
+> **Passwordless OTP Authentication**: 231Booking uses Appwrite's Email OTP and Phone SMS for passwordless authentication. Users receive a 6-digit code to their email or phone - no passwords required.
+
 | Ticket | Title | Priority | Dependencies |
 |--------|-------|----------|--------------|
-| [AUTH-001](./AUTH-001-login-screen.md) | Login Screen | Critical | FOUND-* |
-| [AUTH-002](./AUTH-002-signup-email.md) | Sign Up (Email) | Critical | FOUND-* |
-| [AUTH-003](./AUTH-003-signup-phone.md) | Sign Up (Phone) | High | FOUND-* |
-| [AUTH-004](./AUTH-004-forgot-password.md) | Password Reset | High | FOUND-* |
+| [AUTH-001](./AUTH-001-login-screen.md) | Login Screen (Email OTP & Phone SMS) | Critical | FOUND-* |
+| [AUTH-002](./AUTH-002-signup-email.md) | Sign Up (Email OTP) | Critical | FOUND-* |
+| [AUTH-003](./AUTH-003-signup-phone.md) | Sign Up (Phone SMS) | High | FOUND-* |
+| ~~[AUTH-004](./AUTH-004-forgot-password.md)~~ | ~~Password Reset~~ | **DEPRECATED** | N/A |
 | [AUTH-005](./AUTH-005-logout.md) | Logout Functionality | High | FOUND-003 |
 | [AUTH-006](./AUTH-006-session-management.md) | Session Management | Medium | FOUND-003 |
+
+**Note**: AUTH-004 is deprecated - with passwordless OTP, there are no passwords to reset.
 
 ### User Profiles (PROF) - MVP Phase 1
 | Ticket | Title | Priority | Dependencies |
@@ -100,14 +105,15 @@ Once foundation is complete, auth tickets can run in parallel:
 ```
 ┌─────────────────────────────────────────┐
 │  AUTH-001    AUTH-002    AUTH-003       │
-│  (Login)     (Signup)    (Phone Signup) │
+│  (Login OTP) (Email OTP) (Phone SMS)    │
 │     │           │            │          │
 │     └───────────┼────────────┘          │
 │                 │                        │
-│  AUTH-004    AUTH-005    AUTH-006       │
-│  (Reset)     (Logout)    (Session)      │
+│            AUTH-005    AUTH-006         │
+│            (Logout)    (Session)        │
 └─────────────────────────────────────────┘
          All can run in parallel
+         (AUTH-004 deprecated - no passwords)
 ```
 
 ### Phase 3: Main Features (Parallel)
@@ -143,7 +149,7 @@ These can all run in parallel after MVP is complete:
 
 ### For Single Agent
 1. FOUND-001 → FOUND-002 → FOUND-003 → FOUND-004 → FOUND-005 → FOUND-006
-2. AUTH-001 → AUTH-002 → AUTH-003 → AUTH-004 → AUTH-005 → AUTH-006
+2. AUTH-001 → AUTH-002 → AUTH-003 → AUTH-005 → AUTH-006 (skip AUTH-004)
 3. LIST-001 → LIST-002 → SRCH-001
 4. BOOK-001 → BOOK-002 → PAY-001
 5. PROF-001 → PROF-002 → PROF-003 → PROF-004
@@ -166,7 +172,7 @@ These can all run in parallel after MVP is complete:
 
 **Round 4 - Auth & Features:**
 - Agent 1: AUTH-002, AUTH-003
-- Agent 2: AUTH-004, AUTH-005, AUTH-006
+- Agent 2: AUTH-005, AUTH-006 (AUTH-004 deprecated)
 - Agent 3: LIST-001, LIST-002
 
 **Round 5 - Main Features:**
@@ -232,7 +238,7 @@ mobile/
 │   │   ├── login.tsx
 │   │   ├── signup.tsx
 │   │   ├── signup-phone.tsx
-│   │   └── forgot-password.tsx
+│   │   └── verify-otp.tsx
 │   ├── (tabs)/
 │   │   ├── _layout.tsx
 │   │   ├── index.tsx (Home)

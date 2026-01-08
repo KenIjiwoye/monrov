@@ -1,4 +1,4 @@
-# AUTH-003: Sign Up Screen (Phone Number)
+# AUTH-003: Sign Up Screen (Phone SMS)
 
 ## Ticket Information
 - **ID**: AUTH-003
@@ -8,118 +8,26 @@
 - **Parallel Work**: Can run in parallel with AUTH-001, AUTH-002
 
 ## Description
-Create the phone number sign up screen for 231Booking that allows new users to create an account using their Liberian mobile number (+231). This provides an alternative to email signup for users who prefer phone-based authentication.
+Create the phone number sign up screen for 231Booking that allows new users to create an account using Phone SMS OTP verification. This provides an alternative to email signup for users who prefer phone-based authentication. The app primarily targets Liberian users (+231) but supports international phone numbers.
 
 ## Context
-In Liberia, many users prefer phone-based authentication over email. This screen allows users to sign up with their Liberian mobile number (+231 format). The implementation should validate the phone format and create an account through Appwrite.
+In Liberia, many users prefer phone-based authentication over email. This screen allows users to sign up with their phone number using Appwrite's Phone SMS authentication. Users enter their name and phone number, receive a 6-digit OTP via SMS, and upon verification, their account is created automatically.
 
 ## Implementation Requirements
 
-### 1. Screen File
+### 1. Dependencies (same as AUTH-001)
+
+```bash
+# Phone number input with country picker
+npx expo install react-native-phone-number-input
+
+# For phone validation in Zod schemas
+npm install libphonenumber-js
+```
+
+### 2. Screen File
 
 **File**: `app/(auth)/signup-phone.tsx`
-
-### 2. Phone Input Component
-
-**File**: `components/forms/PhoneInput.tsx`
-
-```typescript
-import { forwardRef } from 'react';
-import { Controller, Control, FieldPath, FieldValues } from 'react-hook-form';
-import { XStack, YStack, Text, Input as TamaguiInput } from 'tamagui';
-
-interface PhoneInputProps<T extends FieldValues> {
-  control: Control<T>;
-  name: FieldPath<T>;
-  label?: string;
-}
-
-export function PhoneInput<T extends FieldValues>({
-  control,
-  name,
-  label,
-}: PhoneInputProps<T>) {
-  return (
-    <Controller
-      control={control}
-      name={name}
-      render={({ field: { onChange, onBlur, value }, fieldState: { error } }) => {
-        // Extract the number part (remove +231 prefix if present)
-        const phoneNumber = value?.startsWith('+231')
-          ? value.slice(4)
-          : value || '';
-
-        const handleChange = (text: string) => {
-          // Only allow digits
-          const digits = text.replace(/\D/g, '');
-          // Limit to 9 digits (Liberian number format)
-          const limited = digits.slice(0, 9);
-          // Always store with +231 prefix
-          onChange(limited ? `+231${limited}` : '');
-        };
-
-        return (
-          <YStack gap="$1">
-            {label && (
-              <Text fontSize="$3" fontWeight="500" color="$gray700">
-                {label}
-              </Text>
-            )}
-            <XStack
-              borderWidth={1}
-              borderColor={error ? '$error' : '$gray300'}
-              borderRadius="$3"
-              backgroundColor="$white"
-              alignItems="center"
-              height={48}
-              focusStyle={{
-                borderColor: error ? '$error' : '$primary',
-                borderWidth: 2,
-              }}
-            >
-              {/* Country Code Prefix */}
-              <XStack
-                paddingHorizontal="$3"
-                height="100%"
-                alignItems="center"
-                backgroundColor="$gray100"
-                borderRightWidth={1}
-                borderRightColor="$gray300"
-                borderTopLeftRadius="$3"
-                borderBottomLeftRadius="$3"
-              >
-                <Text fontSize="$4" color="$gray700" fontWeight="500">
-                  🇱🇷 +231
-                </Text>
-              </XStack>
-
-              {/* Phone Number Input */}
-              <TamaguiInput
-                flex={1}
-                value={phoneNumber}
-                onChangeText={handleChange}
-                onBlur={onBlur}
-                placeholder="XX XXX XXXX"
-                keyboardType="phone-pad"
-                maxLength={11} // 9 digits + 2 spaces for formatting
-                borderWidth={0}
-                backgroundColor="transparent"
-                fontSize="$4"
-                paddingHorizontal="$3"
-              />
-            </XStack>
-            {error && (
-              <Text fontSize="$2" color="$error">
-                {error.message}
-              </Text>
-            )}
-          </YStack>
-        );
-      }}
-    />
-  );
-}
-```
 
 ### 3. Screen Structure
 
@@ -132,46 +40,60 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { YStack, Text, XStack } from 'tamagui';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
+import { ID } from 'react-native-appwrite';
 
 import { FormInput, PhoneInput } from '@/components/forms';
 import { Button } from '@/components/ui';
 import { phoneSignupSchema, PhoneSignupFormData } from '@/lib/validations/auth';
-import { useAuth } from '@/lib/auth/AuthContext';
+import { account } from '@/lib/appwrite/client';
 import { handleAppwriteError } from '@/lib/appwrite/errors';
-import { User, Lock, Eye, EyeOff, Check, X } from '@tamagui/lucide-icons';
+import { User, Phone } from '@tamagui/lucide-icons';
 
 export default function SignupPhoneScreen() {
-  const { signupWithPhone } = useAuth();
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     control,
     handleSubmit,
-    watch,
     formState: { isSubmitting },
   } = useForm<PhoneSignupFormData>({
     resolver: zodResolver(phoneSignupSchema),
     defaultValues: {
       name: '',
       phone: '',
-      password: '',
-      confirmPassword: '',
     },
   });
-
-  const password = watch('password');
 
   const onSubmit = async (data: PhoneSignupFormData) => {
     try {
       setError(null);
-      await signupWithPhone(data.phone, data.password, data.name);
-      // Navigation handled by auth state change in layout
+      setIsLoading(true);
+
+      // Create phone token - sends OTP via SMS
+      // For new users, this initiates account creation
+      const token = await account.createPhoneToken(
+        ID.unique(),
+        data.phone
+      );
+
+      // Navigate to OTP verification screen with name for profile setup
+      router.push({
+        pathname: '/(auth)/verify-otp',
+        params: {
+          userId: token.userId,
+          method: 'phone',
+          destination: data.phone,
+          name: data.name,
+          isSignup: 'true',
+        },
+      });
     } catch (err) {
       const appError = handleAppwriteError(err);
       setError(appError.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -185,14 +107,14 @@ export default function SignupPhoneScreen() {
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <YStack flex={1} padding="$4" justifyContent="center" gap="$5">
+          <YStack flex={1} padding="$4" justifyContent="center" gap="$6">
             {/* Header */}
             <YStack gap="$2" alignItems="center">
               <Text fontSize="$9" fontWeight="700" color="$gray900">
                 Create Account
               </Text>
               <Text fontSize="$4" color="$gray500" textAlign="center">
-                Sign up with your Liberian phone number
+                Sign up with your phone number
               </Text>
             </YStack>
 
@@ -225,56 +147,24 @@ export default function SignupPhoneScreen() {
                 control={control}
                 name="phone"
                 label="Phone Number"
+                defaultCountry="LR"
               />
 
-              <FormInput
-                control={control}
-                name="password"
-                label="Password"
-                placeholder="Create a password"
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoComplete="new-password"
-                leftIcon={<Lock size={20} color="$gray400" />}
-                rightIcon={
-                  <XStack
-                    onPress={() => setShowPassword(!showPassword)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    {showPassword ? (
-                      <EyeOff size={20} color="$gray400" />
-                    ) : (
-                      <Eye size={20} color="$gray400" />
-                    )}
-                  </XStack>
-                }
-              />
+              {/* Info Text */}
+              <YStack
+                backgroundColor="$primaryLight"
+                padding="$3"
+                borderRadius="$3"
+              >
+                <Text fontSize="$3" color="$primary" textAlign="center">
+                  We'll send a 6-digit verification code via SMS
+                </Text>
+              </YStack>
 
-              {/* Password Requirements */}
-              <PasswordRequirements password={password} />
-
-              <FormInput
-                control={control}
-                name="confirmPassword"
-                label="Confirm Password"
-                placeholder="Confirm your password"
-                secureTextEntry={!showConfirmPassword}
-                autoCapitalize="none"
-                autoComplete="new-password"
-                leftIcon={<Lock size={20} color="$gray400" />}
-                rightIcon={
-                  <XStack
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff size={20} color="$gray400" />
-                    ) : (
-                      <Eye size={20} color="$gray400" />
-                    )}
-                  </XStack>
-                }
-              />
+              {/* SMS Rates Notice */}
+              <Text fontSize="$2" color="$gray400" textAlign="center">
+                Standard SMS rates may apply
+              </Text>
 
               {/* Terms */}
               <Text fontSize="$2" color="$gray500" textAlign="center">
@@ -291,12 +181,12 @@ export default function SignupPhoneScreen() {
               {/* Submit Button */}
               <Button
                 onPress={handleSubmit(onSubmit)}
-                loading={isSubmitting}
-                disabled={isSubmitting}
+                loading={isLoading}
+                disabled={isLoading}
                 size="lg"
                 fullWidth
               >
-                Create Account
+                Send Verification Code
               </Button>
             </YStack>
 
@@ -324,109 +214,248 @@ export default function SignupPhoneScreen() {
     </SafeAreaView>
   );
 }
+```
 
-// Password Requirements Component (same as AUTH-002)
-function PasswordRequirements({ password }: { password: string }) {
-  const requirements = [
-    { label: 'At least 8 characters', met: password.length >= 8 },
-    { label: 'One uppercase letter', met: /[A-Z]/.test(password) },
-    { label: 'One lowercase letter', met: /[a-z]/.test(password) },
-    { label: 'One number', met: /[0-9]/.test(password) },
-  ];
+### 4. Phone Input Component (shared with AUTH-001)
+
+The PhoneInput component is defined in AUTH-001. It uses `react-native-phone-number-input` with:
+- Liberia (+231) as the default country
+- Country picker with search and filtering
+- Preferred countries: Liberia, US, UK, Nigeria, Ghana, Sierra Leone
+- Full international E.164 format output
+
+**File**: `components/forms/PhoneInput.tsx`
+
+```typescript
+import { useRef } from 'react';
+import { Controller, Control, FieldPath, FieldValues } from 'react-hook-form';
+import { YStack, Text } from 'tamagui';
+import PhoneNumberInput from 'react-native-phone-number-input';
+
+interface PhoneInputProps<T extends FieldValues> {
+  control: Control<T>;
+  name: FieldPath<T>;
+  label?: string;
+  defaultCountry?: string; // ISO 3166-1 alpha-2 country code
+}
+
+export function PhoneInput<T extends FieldValues>({
+  control,
+  name,
+  label,
+  defaultCountry = 'LR', // Liberia as default
+}: PhoneInputProps<T>) {
+  const phoneInputRef = useRef<PhoneNumberInput>(null);
 
   return (
-    <YStack gap="$1" paddingLeft="$2">
-      {requirements.map((req) => (
-        <XStack key={req.label} gap="$2" alignItems="center">
-          {req.met ? (
-            <Check size={14} color="$success" />
-          ) : (
-            <X size={14} color="$gray400" />
+    <Controller
+      control={control}
+      name={name}
+      render={({ field: { onChange, value }, fieldState: { error } }) => (
+        <YStack gap="$1">
+          {label && (
+            <Text fontSize="$3" fontWeight="500" color="$gray700">
+              {label}
+            </Text>
           )}
-          <Text
-            fontSize="$2"
-            color={req.met ? '$success' : '$gray400'}
-          >
-            {req.label}
-          </Text>
-        </XStack>
-      ))}
-    </YStack>
+          <PhoneNumberInput
+            ref={phoneInputRef}
+            value={value?.replace(/^\+\d+/, '') || ''} // Remove country code for display
+            defaultCode={defaultCountry}
+            onChangeFormattedText={(text) => {
+              // Store full international format (E.164)
+              onChange(text);
+            }}
+            layout="first"
+            withDarkTheme={false}
+            withShadow={false}
+            autoFocus={false}
+            containerStyle={{
+              width: '100%',
+              borderWidth: 1,
+              borderColor: error ? '#EF4444' : '#D1D5DB',
+              borderRadius: 12,
+              backgroundColor: '#FFFFFF',
+            }}
+            textContainerStyle={{
+              backgroundColor: '#FFFFFF',
+              borderTopRightRadius: 12,
+              borderBottomRightRadius: 12,
+              paddingVertical: 0,
+            }}
+            textInputStyle={{
+              height: 48,
+              fontSize: 16,
+            }}
+            codeTextStyle={{
+              fontSize: 16,
+            }}
+            flagButtonStyle={{
+              width: 80,
+            }}
+            countryPickerProps={{
+              withFilter: true,
+              withFlag: true,
+              withCountryNameButton: false,
+              withAlphaFilter: true,
+              withCallingCode: true,
+              preferredCountries: ['LR', 'US', 'GB', 'NG', 'GH', 'SL'], // Liberia + common countries
+            }}
+            placeholder="Phone number"
+          />
+          {error && (
+            <Text fontSize="$2" color="$error">
+              {error.message}
+            </Text>
+          )}
+        </YStack>
+      )}
+    />
   );
 }
 ```
 
-### 4. Visual Design Guidelines
+### 5. Validation Schema
 
-```
-┌─────────────────────────────────────────────────┐
-│                                                 │
-│              Create Account                     │
-│   Sign up with your Liberian phone number      │
-│                                                 │
-│  ┌─────────────────────────────────────────┐   │
-│  │  👤  Enter your full name               │   │
-│  └─────────────────────────────────────────┘   │
-│                                                 │
-│  Phone Number                                   │
-│  ┌──────────────┬──────────────────────────┐   │
-│  │ 🇱🇷 +231    │  XX XXX XXXX             │   │
-│  └──────────────┴──────────────────────────┘   │
-│                                                 │
-│  ┌─────────────────────────────────────────┐   │
-│  │  🔒  Create a password            👁   │   │
-│  └─────────────────────────────────────────┘   │
-│                                                 │
-│    ✓ At least 8 characters                     │
-│    ✓ One uppercase letter                      │
-│    ✗ One lowercase letter                      │
-│    ✗ One number                                │
-│                                                 │
-│  ┌─────────────────────────────────────────┐   │
-│  │  🔒  Confirm your password        👁   │   │
-│  └─────────────────────────────────────────┘   │
-│                                                 │
-│  By signing up, you agree to our Terms...      │
-│                                                 │
-│  ┌─────────────────────────────────────────┐   │
-│  │          CREATE ACCOUNT                 │   │
-│  └─────────────────────────────────────────┘   │
-│                                                 │
-│       Sign up with email instead               │
-│                                                 │
-│        Already have an account? Log In         │
-│                                                 │
-└─────────────────────────────────────────────────┘
+**File**: `lib/validations/auth.ts` (add)
+
+```typescript
+import { z } from 'zod';
+import { isValidPhoneNumber } from 'libphonenumber-js';
+
+// Phone signup schema
+export const phoneSignupSchema = z.object({
+  name: z
+    .string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(50, 'Name must be less than 50 characters')
+    .regex(/^[a-zA-Z\s'-]+$/, 'Name can only contain letters, spaces, hyphens, and apostrophes'),
+  phone: z
+    .string()
+    .min(1, 'Phone number is required')
+    .refine(
+      (value) => {
+        try {
+          return isValidPhoneNumber(value);
+        } catch {
+          return false;
+        }
+      },
+      { message: 'Please enter a valid phone number' }
+    ),
+});
+
+export type PhoneSignupFormData = z.infer<typeof phoneSignupSchema>;
 ```
 
-### 5. Phone Number Format
+### 6. Visual Design Guidelines
 
-- **Country code**: +231 (Liberia)
-- **Number format**: 9 digits after country code
-- **Display format**: +231 XX XXX XXXX
-- **Storage format**: +231XXXXXXXXX (no spaces)
+**Phone Signup Screen:**
+```
++--------------------------------------------------+
+|                                                  |
+|              Create Account                      |
+|       Sign up with your phone number            |
+|                                                  |
+|  Full Name                                       |
+|  +------------------------------------------+   |
+|  |  [user]  Enter your full name            |   |
+|  +------------------------------------------+   |
+|                                                  |
+|  Phone Number                                    |
+|  +--------+--------------------------------+    |
+|  | LR +231 |  Enter phone number           |    |
+|  +--------+--------------------------------+    |
+|                                                  |
+|  +------------------------------------------+   |
+|  | We'll send a 6-digit verification code  |   |
+|  |              via SMS                     |   |
+|  +------------------------------------------+   |
+|                                                  |
+|         Standard SMS rates may apply            |
+|                                                  |
+|  By signing up, you agree to our Terms of       |
+|  Service and Privacy Policy                      |
+|                                                  |
+|  +------------------------------------------+   |
+|  |       SEND VERIFICATION CODE             |   |
+|  +------------------------------------------+   |
+|                                                  |
+|        Sign up with email instead               |
+|                                                  |
+|        Already have an account? Log In          |
+|                                                  |
++--------------------------------------------------+
+```
+
+**Country Picker (when tapped):**
+```
++--------------------------------------------------+
+|  Search countries...                    [X]     |
+|                                                  |
+|  PREFERRED                                       |
+|  +------------------------------------------+   |
+|  | LR  Liberia                    +231     |   |
+|  | US  United States              +1       |   |
+|  | GB  United Kingdom             +44      |   |
+|  | NG  Nigeria                    +234     |   |
+|  | GH  Ghana                      +233     |   |
+|  | SL  Sierra Leone               +232     |   |
+|  +------------------------------------------+   |
+|                                                  |
+|  ALL COUNTRIES                                   |
+|  +------------------------------------------+   |
+|  | AF  Afghanistan                +93      |   |
+|  | AL  Albania                    +355     |   |
+|  | ...                                      |   |
+|  +------------------------------------------+   |
++--------------------------------------------------+
+```
+
+### 7. Phone Number Format
+
+- **Storage format**: E.164 international format (e.g., `+231770123456`)
+- **Liberian numbers**: +231 followed by 7-9 digits
+- **Validation**: Uses `libphonenumber-js` for country-specific validation
+- **Display**: Formatted per country conventions
+
+### 8. Appwrite SMS Configuration
+
+Note: SMS delivery requires configuration in Appwrite:
+1. Appwrite Cloud provides 10 free SMS per month on paid plans
+2. Additional SMS are charged per message based on destination country
+3. Mock phone numbers available for testing (e.g., +15555550100)
 
 ## Acceptance Criteria
 
 - [ ] Screen renders at `/(auth)/signup-phone` route
-- [ ] Phone input shows Liberian flag and +231 prefix
-- [ ] Phone input accepts only 9 digits
-- [ ] Phone validation follows Liberian format
-- [ ] Password requirements display works
-- [ ] Form submits and creates account
-- [ ] Error handling for duplicate phone numbers
+- [ ] Name input validates (2-50 chars, letters/spaces only)
+- [ ] Phone input shows country picker with Liberia as default
+- [ ] Phone input supports international numbers
+- [ ] Country picker shows preferred countries at top
+- [ ] Phone validation uses libphonenumber-js
+- [ ] "Send Verification Code" calls Appwrite createPhoneToken
+- [ ] OTP screen receives userId, destination (phone), name, and isSignup flag
+- [ ] OTP verification creates account for new users
+- [ ] User's name is set after account creation
+- [ ] Error handling for existing phone numbers
 - [ ] Link to email signup works
 - [ ] Link to login works
 - [ ] Successful signup redirects to main app
 
 ## Testing Checklist
 
-- [ ] Valid phone number creates account
+- [ ] Valid Liberian phone number (+231) creates account
+- [ ] Valid US phone number (+1) creates account
 - [ ] Invalid phone format shows error
-- [ ] Phone input filters non-numeric characters
-- [ ] +231 prefix cannot be removed
-- [ ] Existing phone number shows API error
-- [ ] Password validation matches email signup
+- [ ] Country picker opens and allows selection
+- [ ] Preferred countries appear at top of picker
+- [ ] Phone number validates per country rules
+- [ ] OTP verification creates new account
+- [ ] User's name is properly set
+- [ ] Existing phone number shows appropriate error
+- [ ] Invalid OTP shows error and clears input
+- [ ] Resend code works with cooldown
 - [ ] Navigation links work correctly
 - [ ] Keyboard type is phone-pad
 
@@ -435,20 +464,38 @@ function PasswordRequirements({ password }: { password: string }) {
 | File | Action | Description |
 |------|--------|-------------|
 | `app/(auth)/signup-phone.tsx` | Create | Phone signup screen |
-| `components/forms/PhoneInput.tsx` | Create | Phone input component |
+| `components/forms/PhoneInput.tsx` | Create/Verify | Phone input with country picker (from AUTH-001) |
 | `components/forms/index.ts` | Modify | Export PhoneInput |
+| `lib/validations/auth.ts` | Modify | Add phone signup schema |
+
+## Dependencies to Install
+
+```bash
+# Phone number input with country picker
+npx expo install react-native-phone-number-input
+
+# For phone validation in Zod schemas
+npm install libphonenumber-js
+```
 
 ## Files to Reference
 
-- `lib/validations/auth.ts` - Phone signup schema (FOUND-005)
-- `lib/auth/AuthContext.tsx` - signupWithPhone function (FOUND-003)
-- `app/(auth)/signup.tsx` - Reference for similar structure (AUTH-002)
+- `lib/appwrite/client.ts` - account.createPhoneToken, updateName (FOUND-003)
+- `lib/appwrite/errors.ts` - Error handling (FOUND-003)
+- `lib/auth/AuthContext.tsx` - refreshUser function (FOUND-003)
+- `components/ui/Button.tsx` - Button component (FOUND-004)
+- `components/forms/FormInput.tsx` - Form input (FOUND-005)
+- `app/(auth)/verify-otp.tsx` - Shared OTP verification (AUTH-001)
 
 ## Notes for AI Agent
 
-- The PhoneInput component should be reusable for profile editing
-- Liberian phone numbers are 9 digits after the +231 prefix
-- The country code prefix should be visually distinct and non-editable
-- Consider adding phone number formatting (spaces) for better readability
-- Test keyboard behavior - phone-pad should appear
-- The PasswordRequirements component can be extracted to a shared component
+- Phone numbers must be in E.164 format for Appwrite (e.g., +231XXXXXXX)
+- `react-native-phone-number-input` handles formatting automatically
+- Appwrite Phone SMS flow: `createPhoneToken()` -> user gets SMS -> `createSession()` with secret
+- For new users, the account is created when verifying the OTP
+- After `createSession`, call `account.updateName()` to set the user's name
+- The OTP screen is shared between login and signup - use params to differentiate
+- Liberian phone numbers are typically 9 digits after +231
+- Consider the SMS cost implications - Appwrite charges per SMS after free tier
+- Test with mock phone numbers in development (Appwrite provides test numbers)
+- The PhoneInput component is shared with AUTH-001 - ensure consistency

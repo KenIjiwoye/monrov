@@ -5,13 +5,13 @@
 - **Priority**: Medium
 - **Dependencies**: FOUND-003
 - **Phase**: MVP (Phase 1)
-- **Parallel Work**: Can run in parallel with AUTH-004, AUTH-005
+- **Parallel Work**: Can run in parallel with AUTH-005
 
 ## Description
 Implement session management for 231Booking that allows users to stay logged in between app sessions. This includes secure session persistence using Expo SecureStore and automatic session restoration on app launch.
 
 ## Context
-Users expect to remain logged in when they close and reopen the app. This ticket implements secure session persistence using device-level secure storage. The session should be automatically restored on app launch, and the app should gracefully handle expired sessions.
+Users expect to remain logged in when they close and reopen the app. This ticket implements secure session persistence using device-level secure storage. The session should be automatically restored on app launch, and the app should gracefully handle expired sessions. With OTP-based authentication, if a session expires, users simply request a new OTP to log back in.
 
 ## Implementation Requirements
 
@@ -41,7 +41,7 @@ export const sessionStorage = {
 
     await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(session));
 
-    // Set expiry for 30 days
+    // Set expiry for 30 days (Appwrite default session length)
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + 30);
     await SecureStore.setItemAsync(SESSION_EXPIRY_KEY, expiry.toISOString());
@@ -84,11 +84,11 @@ export const sessionStorage = {
 
 ### 2. Updated Auth Context with Session Persistence
 
-**File**: `lib/auth/AuthContext.tsx` (updated)
+**File**: `lib/auth/AuthContext.tsx`
 
 ```typescript
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Models } from 'react-native-appwrite';
+import { Models, ID } from 'react-native-appwrite';
 import { account } from '@/lib/appwrite/client';
 import { sessionStorage } from './sessionStorage';
 
@@ -97,13 +97,8 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   isInitialized: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  loginWithPhone: (phone: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string) => Promise<void>;
-  signupWithPhone: (phone: string, password: string, name: string) => Promise<void>;
+  refreshUser: () => Promise<Models.User<Models.Preferences> | null>;
   logout: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -134,10 +129,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (hasSession) {
           // Try to validate with Appwrite
-          await refreshUser();
+          const currentUser = await refreshUser();
+
+          if (currentUser) {
+            // Session is valid, user is logged in
+            console.log('Session restored for user:', currentUser.name || currentUser.email || currentUser.phone);
+          }
         }
       } catch (error) {
         // Session invalid or expired
+        console.log('Session validation failed, redirecting to login');
         await sessionStorage.clearSession();
         setUser(null);
       } finally {
@@ -148,73 +149,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
   }, [refreshUser]);
 
-  const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      const session = await account.createEmailPasswordSession(email, password);
-      const currentUser = await refreshUser();
-
-      if (currentUser) {
-        // Save session to secure storage
-        await sessionStorage.saveSession(session.$id, currentUser.$id);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loginWithPhone = async (phone: string, password: string) => {
-    setIsLoading(true);
-    try {
-      const session = await account.createEmailPasswordSession(phone, password);
-      const currentUser = await refreshUser();
-
-      if (currentUser) {
-        await sessionStorage.saveSession(session.$id, currentUser.$id);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const signup = async (email: string, password: string, name: string) => {
-    setIsLoading(true);
-    try {
-      await account.create('unique()', email, password, name);
-      await login(email, password);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const signupWithPhone = async (phone: string, password: string, name: string) => {
-    setIsLoading(true);
-    try {
-      await account.create('unique()', phone, password, name);
-      await loginWithPhone(phone, password);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const logout = async () => {
     setIsLoading(true);
     try {
       await account.deleteSession('current');
     } catch (error) {
       // Session might already be invalid, continue with local cleanup
+      console.warn('Logout API error:', error);
     } finally {
       await sessionStorage.clearSession();
       setUser(null);
       setIsLoading(false);
     }
-  };
-
-  const resetPassword = async (email: string) => {
-    await account.createRecovery(
-      email,
-      'booking231://reset-password'
-    );
   };
 
   return (
@@ -224,13 +170,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isLoading,
         isAuthenticated: !!user,
         isInitialized,
-        login,
-        loginWithPhone,
-        signup,
-        signupWithPhone,
-        logout,
-        resetPassword,
         refreshUser,
+        logout,
       }}
     >
       {children}
@@ -247,12 +188,56 @@ export function useAuth() {
 }
 ```
 
-### 3. Splash/Loading Screen
+### 3. Save Session After OTP Verification
+
+The OTP verification screen (AUTH-001) should save the session after successful verification:
+
+**File**: `app/(auth)/verify-otp.tsx` (add to handleVerify)
+
+```typescript
+const handleVerify = async (otpCode: string) => {
+  if (!userId || otpCode.length !== OTP_LENGTH) return;
+
+  try {
+    setError(null);
+    setIsLoading(true);
+
+    // Create session with OTP
+    const session = await account.createSession(userId, otpCode);
+
+    // Save session to secure storage for persistence
+    await sessionStorage.saveSession(session.$id, userId);
+
+    // If this is a signup flow and we have a name, update the user's name
+    if (isSignup === 'true' && name) {
+      try {
+        await account.updateName(name);
+      } catch (updateErr) {
+        console.warn('Failed to set user name:', updateErr);
+      }
+    }
+
+    // Refresh user data
+    await refreshUser();
+
+    // Navigation handled by auth state change in layout
+  } catch (err) {
+    const appError = handleAppwriteError(err);
+    setError(appError.message);
+    setOtp(Array(OTP_LENGTH).fill(''));
+    inputRefs.current[0]?.focus();
+  } finally {
+    setIsLoading(false);
+  }
+};
+```
+
+### 4. Splash/Loading Screen
 
 **File**: `components/SplashScreen.tsx`
 
 ```typescript
-import { YStack, Spinner, Text, Image } from 'tamagui';
+import { YStack, Spinner, Text } from 'tamagui';
 
 export function SplashScreen() {
   return (
@@ -287,9 +272,9 @@ export function SplashScreen() {
 }
 ```
 
-### 4. Updated Root Layout with Auth Guard
+### 5. Updated Root Layout with Auth Guard
 
-**File**: `app/_layout.tsx` (updated)
+**File**: `app/_layout.tsx`
 
 ```typescript
 import { useEffect } from 'react';
@@ -353,7 +338,7 @@ export default function RootLayout() {
 }
 ```
 
-### 5. Session Refresh on App Focus
+### 6. Session Refresh on App Focus
 
 **File**: `hooks/useSessionRefresh.ts`
 
@@ -376,11 +361,12 @@ export function useSessionRefresh() {
           nextAppState === 'active' &&
           isAuthenticated
         ) {
-          // Silently refresh user data
+          // Silently refresh user data to validate session
           try {
             await refreshUser();
           } catch (error) {
             // Session might be expired, auth guard will handle redirect
+            console.log('Session refresh failed:', error);
           }
         }
         appState.current = nextAppState;
@@ -392,20 +378,56 @@ export function useSessionRefresh() {
 }
 ```
 
-### 6. Add Session Refresh to Tab Layout
+### 7. Add Session Refresh to Tab Layout
 
-**File**: `app/(tabs)/_layout.tsx` (add hook)
+**File**: `app/(tabs)/_layout.tsx`
 
 ```typescript
 import { Tabs } from 'expo-router';
 import { useSessionRefresh } from '@/hooks/useSessionRefresh';
-// ... other imports
+import { Home, Search, Calendar, User } from '@tamagui/lucide-icons';
 
 export default function TabLayout() {
   // Refresh session when app comes to foreground
   useSessionRefresh();
 
-  // ... rest of tab layout
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: '$primary',
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }) => <Home size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: 'Search',
+          tabBarIcon: ({ color }) => <Search size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="bookings"
+        options={{
+          title: 'Bookings',
+          tabBarIcon: ({ color }) => <Calendar size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <User size={24} color={color} />,
+        }}
+      />
+    </Tabs>
+  );
 }
 ```
 
@@ -413,36 +435,77 @@ export default function TabLayout() {
 
 ```
 App Launch
-    │
-    ▼
-┌─────────────────────┐
-│  Check SecureStore  │
-│   for saved session │
-└─────────────────────┘
-    │
-    ├── No session ──────────────▶ Show Login Screen
-    │
-    ▼
-┌─────────────────────┐
-│ Validate session    │
-│ with Appwrite       │
-└─────────────────────┘
-    │
-    ├── Invalid/Expired ─────────▶ Clear storage → Show Login
-    │
-    ▼
-┌─────────────────────┐
-│   Session Valid     │
-│  Show Main App      │
-└─────────────────────┘
+    |
+    v
++-------------------------+
+|  Show Splash Screen     |
+|  Check SecureStore      |
+|  for saved session      |
++-------------------------+
+    |
+    +-- No session -----------------> Show Login Screen
+    |
+    v
++-------------------------+
+| Validate session        |
+| with Appwrite           |
+| (account.get())         |
++-------------------------+
+    |
+    +-- Invalid/Expired ------------> Clear storage -> Show Login
+    |
+    v
++-------------------------+
+|   Session Valid         |
+|  Show Main App (Tabs)   |
++-------------------------+
+    |
+    v
++-------------------------+
+| On App Foreground:      |
+| Silently refresh user   |
+| to validate session     |
++-------------------------+
+```
+
+## OTP Session Flow
+
+```
+User enters email/phone
+    |
+    v
+createEmailToken() / createPhoneToken()
+    |
+    v
+User receives OTP (email/SMS)
+    |
+    v
+User enters OTP
+    |
+    v
+createSession(userId, secret)
+    |
+    v
++-------------------------+
+| Save to SecureStore:    |
+| - sessionId             |
+| - userId                |
+| - expiry (30 days)      |
++-------------------------+
+    |
+    v
+refreshUser() -> Update AuthContext
+    |
+    v
+AuthGuard redirects to (tabs)
 ```
 
 ## Acceptance Criteria
 
-- [ ] Session saved to SecureStore on successful login
+- [ ] Session saved to SecureStore on successful OTP verification
 - [ ] Session restored automatically on app launch
 - [ ] Splash screen shown while validating session
-- [ ] Expired sessions handled gracefully
+- [ ] Expired sessions handled gracefully (redirect to login)
 - [ ] Session cleared on logout
 - [ ] Invalid server session redirects to login
 - [ ] Session refreshed when app returns to foreground
@@ -452,13 +515,15 @@ App Launch
 ## Testing Checklist
 
 - [ ] Login persists after app restart
+- [ ] Login persists after phone restart
 - [ ] Logout clears stored session
 - [ ] Expired session redirects to login
-- [ ] Invalid session (server-side) handled
+- [ ] Invalid session (server-side revoked) handled
 - [ ] Fresh install shows login screen
 - [ ] Session validated on app foreground
 - [ ] Splash screen displays during initialization
 - [ ] No flash of login screen for valid session
+- [ ] Session works for both email and phone logins
 
 ## Files to Create/Modify
 
@@ -468,27 +533,43 @@ App Launch
 | `lib/auth/AuthContext.tsx` | Modify | Add session persistence |
 | `components/SplashScreen.tsx` | Create | Loading/splash screen |
 | `app/_layout.tsx` | Modify | Add auth guard and splash |
+| `app/(auth)/verify-otp.tsx` | Modify | Save session after verification |
 | `hooks/useSessionRefresh.ts` | Create | App focus session refresh |
+| `hooks/index.ts` | Modify | Export useSessionRefresh |
 | `app/(tabs)/_layout.tsx` | Modify | Add session refresh hook |
+
+## Dependencies
+
+```bash
+# For secure storage (should already be installed via Expo)
+npx expo install expo-secure-store
+```
 
 ## Files to Reference
 
 - `lib/appwrite/client.ts` - Appwrite account service (FOUND-003)
+- `app/(auth)/verify-otp.tsx` - OTP verification (AUTH-001)
 
 ## Security Considerations
 
 - Use SecureStore for sensitive session data (encrypted on device)
-- Never store passwords, only session tokens
-- Implement session expiry (30 days default)
+  - iOS: Uses Keychain
+  - Android: Uses Keystore
+- Never store OTP codes, only session tokens
+- Implement session expiry (30 days default, matches Appwrite)
 - Clear session on logout even if API fails
 - Validate session server-side on each app launch
 - Handle expired/revoked sessions gracefully
+- Don't log sensitive session data
 
 ## Notes for AI Agent
 
-- SecureStore uses Keychain on iOS and Keystore on Android
-- The `isInitialized` flag prevents flash of wrong screen
+- SecureStore uses Keychain on iOS and Keystore on Android (both encrypted)
+- The `isInitialized` flag prevents flash of wrong screen during load
 - Session refresh on foreground prevents stale authentication state
 - Always clear local session even if server logout fails
-- Consider implementing refresh token flow for longer sessions
+- Appwrite sessions last 30 days by default
+- With OTP auth, session expiry just means user needs to request a new OTP
+- The sessionStorage module should be imported in verify-otp.tsx
 - Test on both iOS and Android as secure storage behaves differently
+- Consider showing a "Session expired" toast when redirecting to login

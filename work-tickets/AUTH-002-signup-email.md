@@ -1,4 +1,4 @@
-# AUTH-002: Sign Up Screen (Email/Password)
+# AUTH-002: Sign Up Screen (Email OTP)
 
 ## Ticket Information
 - **ID**: AUTH-002
@@ -8,18 +8,21 @@
 - **Parallel Work**: Can run in parallel with AUTH-001, AUTH-003
 
 ## Description
-Create the email/password sign up screen for 231Booking that allows new users to create an account. The screen should collect user information, validate input, and create the account through Appwrite.
+Create the email sign up screen for 231Booking that allows new users to create an account using Email OTP verification. This is a passwordless signup flow - users provide their name and email, verify via a 6-digit code sent to their email, and their account is created automatically.
 
 ## Context
-The signup screen is the entry point for new users. It collects essential information (name, email, password) and creates a new account. The screen must provide clear feedback on password requirements and handle all potential error cases gracefully.
+The signup screen provides passwordless account creation which is more secure and user-friendly than traditional password-based signup. Users enter their email, receive a 6-digit OTP, and upon verification, their account is created. Appwrite handles account creation automatically when verifying an OTP for a new user.
 
 ## Implementation Requirements
 
-### 1. Screen File
+### 1. Screen Files
+
+**File**: `app/(auth)/signup.tsx` - Email signup screen
+**File**: `app/(auth)/verify-signup.tsx` - OTP verification for signup (reuses verify-otp with additional name param)
+
+### 2. Signup Screen Structure
 
 **File**: `app/(auth)/signup.tsx`
-
-### 2. Screen Structure
 
 ```typescript
 import { useState } from 'react';
@@ -29,45 +32,59 @@ import { YStack, Text, XStack } from 'tamagui';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router } from 'expo-router';
+import { ID } from 'react-native-appwrite';
 
 import { FormInput } from '@/components/forms';
 import { Button } from '@/components/ui';
-import { signupSchema, SignupFormData } from '@/lib/validations/auth';
-import { useAuth } from '@/lib/auth/AuthContext';
+import { emailSignupSchema, EmailSignupFormData } from '@/lib/validations/auth';
+import { account } from '@/lib/appwrite/client';
 import { handleAppwriteError } from '@/lib/appwrite/errors';
-import { User, Mail, Lock, Eye, EyeOff, Check, X } from '@tamagui/lucide-icons';
+import { User, Mail } from '@tamagui/lucide-icons';
 
 export default function SignupScreen() {
-  const { signup } = useAuth();
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     control,
     handleSubmit,
-    watch,
     formState: { isSubmitting },
-  } = useForm<SignupFormData>({
-    resolver: zodResolver(signupSchema),
+  } = useForm<EmailSignupFormData>({
+    resolver: zodResolver(emailSignupSchema),
     defaultValues: {
       name: '',
       email: '',
-      password: '',
-      confirmPassword: '',
     },
   });
 
-  const password = watch('password');
-
-  const onSubmit = async (data: SignupFormData) => {
+  const onSubmit = async (data: EmailSignupFormData) => {
     try {
       setError(null);
-      await signup(data.email, data.password, data.name);
-      // Navigation handled by auth state change in layout
+      setIsLoading(true);
+
+      // Create email token - sends OTP to email
+      // For new users, this initiates account creation
+      const token = await account.createEmailToken(
+        ID.unique(),
+        data.email
+      );
+
+      // Navigate to OTP verification screen with name for profile setup
+      router.push({
+        pathname: '/(auth)/verify-otp',
+        params: {
+          userId: token.userId,
+          method: 'email',
+          destination: data.email,
+          name: data.name,
+          isSignup: 'true',
+        },
+      });
     } catch (err) {
       const appError = handleAppwriteError(err);
       setError(appError.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -81,7 +98,7 @@ export default function SignupScreen() {
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <YStack flex={1} padding="$4" justifyContent="center" gap="$5">
+          <YStack flex={1} padding="$4" justifyContent="center" gap="$6">
             {/* Header */}
             <YStack gap="$2" alignItems="center">
               <Text fontSize="$9" fontWeight="700" color="$gray900">
@@ -120,7 +137,7 @@ export default function SignupScreen() {
               <FormInput
                 control={control}
                 name="email"
-                label="Email"
+                label="Email Address"
                 placeholder="Enter your email"
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -128,54 +145,16 @@ export default function SignupScreen() {
                 leftIcon={<Mail size={20} color="$gray400" />}
               />
 
-              <FormInput
-                control={control}
-                name="password"
-                label="Password"
-                placeholder="Create a password"
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoComplete="new-password"
-                leftIcon={<Lock size={20} color="$gray400" />}
-                rightIcon={
-                  <XStack
-                    onPress={() => setShowPassword(!showPassword)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    {showPassword ? (
-                      <EyeOff size={20} color="$gray400" />
-                    ) : (
-                      <Eye size={20} color="$gray400" />
-                    )}
-                  </XStack>
-                }
-              />
-
-              {/* Password Requirements */}
-              <PasswordRequirements password={password} />
-
-              <FormInput
-                control={control}
-                name="confirmPassword"
-                label="Confirm Password"
-                placeholder="Confirm your password"
-                secureTextEntry={!showConfirmPassword}
-                autoCapitalize="none"
-                autoComplete="new-password"
-                leftIcon={<Lock size={20} color="$gray400" />}
-                rightIcon={
-                  <XStack
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff size={20} color="$gray400" />
-                    ) : (
-                      <Eye size={20} color="$gray400" />
-                    )}
-                  </XStack>
-                }
-              />
+              {/* Info Text */}
+              <YStack
+                backgroundColor="$primaryLight"
+                padding="$3"
+                borderRadius="$3"
+              >
+                <Text fontSize="$3" color="$primary" textAlign="center">
+                  We'll send a 6-digit verification code to your email
+                </Text>
+              </YStack>
 
               {/* Terms */}
               <Text fontSize="$2" color="$gray500" textAlign="center">
@@ -192,12 +171,12 @@ export default function SignupScreen() {
               {/* Submit Button */}
               <Button
                 onPress={handleSubmit(onSubmit)}
-                loading={isSubmitting}
-                disabled={isSubmitting}
+                loading={isLoading}
+                disabled={isLoading}
                 size="lg"
                 fullWidth
               >
-                Create Account
+                Send Verification Code
               </Button>
             </YStack>
 
@@ -225,157 +204,436 @@ export default function SignupScreen() {
     </SafeAreaView>
   );
 }
+```
 
-// Password Requirements Component
-function PasswordRequirements({ password }: { password: string }) {
-  const requirements = [
-    { label: 'At least 8 characters', met: password.length >= 8 },
-    { label: 'One uppercase letter', met: /[A-Z]/.test(password) },
-    { label: 'One lowercase letter', met: /[a-z]/.test(password) },
-    { label: 'One number', met: /[0-9]/.test(password) },
-  ];
+### 3. Updated OTP Verification Screen (handles signup flow)
+
+The OTP verification screen from AUTH-001 needs to be updated to handle the signup flow:
+
+**File**: `app/(auth)/verify-otp.tsx` (updated)
+
+```typescript
+import { useState, useRef, useEffect } from 'react';
+import { TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { YStack, Text, XStack, Input } from 'tamagui';
+import { router, useLocalSearchParams } from 'expo-router';
+
+import { Button } from '@/components/ui';
+import { account } from '@/lib/appwrite/client';
+import { handleAppwriteError } from '@/lib/appwrite/errors';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { ArrowLeft, Mail, Phone } from '@tamagui/lucide-icons';
+import { ID } from 'react-native-appwrite';
+
+const OTP_LENGTH = 6;
+
+export default function VerifyOTPScreen() {
+  const { userId, method, destination, name, isSignup } = useLocalSearchParams<{
+    userId: string;
+    method: 'email' | 'phone';
+    destination: string;
+    name?: string;
+    isSignup?: string;
+  }>();
+
+  const { refreshUser } = useAuth();
+  const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  const inputRefs = useRef<(TextInput | null)[]>([]);
+
+  // Cooldown timer for resend
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
+  const handleOtpChange = (text: string, index: number) => {
+    // Only allow digits
+    const digit = text.replace(/\D/g, '').slice(-1);
+
+    const newOtp = [...otp];
+    newOtp[index] = digit;
+    setOtp(newOtp);
+
+    // Auto-focus next input
+    if (digit && index < OTP_LENGTH - 1) {
+      inputRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-submit when all digits entered
+    if (newOtp.every((d) => d !== '') && newOtp.join('').length === OTP_LENGTH) {
+      handleVerify(newOtp.join(''));
+    }
+  };
+
+  const handleKeyPress = (e: any, index: number) => {
+    // Handle backspace - focus previous input
+    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleVerify = async (otpCode: string) => {
+    if (!userId || otpCode.length !== OTP_LENGTH) return;
+
+    try {
+      setError(null);
+      setIsLoading(true);
+
+      // Create session with OTP
+      // For new users, this also creates the account
+      await account.createSession(userId, otpCode);
+
+      // If this is a signup flow and we have a name, update the user's name
+      if (isSignup === 'true' && name) {
+        try {
+          await account.updateName(name);
+        } catch (updateErr) {
+          // Non-critical error, user can update name later
+          console.warn('Failed to set user name:', updateErr);
+        }
+      }
+
+      // Refresh user data
+      await refreshUser();
+
+      // Navigation handled by auth state change in layout
+    } catch (err) {
+      const appError = handleAppwriteError(err);
+      setError(appError.message);
+      // Clear OTP on error
+      setOtp(Array(OTP_LENGTH).fill(''));
+      inputRefs.current[0]?.focus();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!destination || resendCooldown > 0) return;
+
+    try {
+      setError(null);
+      setIsResending(true);
+
+      if (method === 'email') {
+        await account.createEmailToken(ID.unique(), destination);
+      } else {
+        await account.createPhoneToken(ID.unique(), destination);
+      }
+
+      // Start 60-second cooldown
+      setResendCooldown(60);
+    } catch (err) {
+      const appError = handleAppwriteError(err);
+      setError(appError.message);
+    } finally {
+      setIsResending(false);
+    }
+  };
+
+  const maskDestination = () => {
+    if (!destination) return '';
+
+    if (method === 'email') {
+      const [local, domain] = destination.split('@');
+      const masked = local.slice(0, 2) + '***' + local.slice(-1);
+      return `${masked}@${domain}`;
+    } else {
+      // Mask phone: show first 4 and last 2 digits
+      return destination.slice(0, 4) + '****' + destination.slice(-2);
+    }
+  };
+
+  const getTitle = () => {
+    return isSignup === 'true' ? 'Verify Your Email' : 'Enter Verification Code';
+  };
+
+  const getButtonText = () => {
+    return isSignup === 'true' ? 'Verify & Create Account' : 'Verify & Log In';
+  };
 
   return (
-    <YStack gap="$1" paddingLeft="$2">
-      {requirements.map((req) => (
-        <XStack key={req.label} gap="$2" alignItems="center">
-          {req.met ? (
-            <Check size={14} color="$success" />
-          ) : (
-            <X size={14} color="$gray400" />
-          )}
-          <Text
-            fontSize="$2"
-            color={req.met ? '$success' : '$gray400'}
-          >
-            {req.label}
-          </Text>
-        </XStack>
-      ))}
-    </YStack>
+    <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <YStack flex={1} padding="$4">
+          {/* Back Button */}
+          <XStack>
+            <Button
+              variant="ghost"
+              size="sm"
+              onPress={() => router.back()}
+              icon={<ArrowLeft size={20} />}
+            >
+              Back
+            </Button>
+          </XStack>
+
+          <YStack flex={1} justifyContent="center" gap="$6">
+            {/* Icon */}
+            <YStack alignItems="center">
+              <YStack
+                backgroundColor="$primaryLight"
+                padding="$4"
+                borderRadius={1000}
+              >
+                {method === 'email' ? (
+                  <Mail size={40} color="$primary" />
+                ) : (
+                  <Phone size={40} color="$primary" />
+                )}
+              </YStack>
+            </YStack>
+
+            {/* Header */}
+            <YStack gap="$2" alignItems="center">
+              <Text fontSize="$8" fontWeight="700" color="$gray900">
+                {getTitle()}
+              </Text>
+              <Text fontSize="$4" color="$gray500" textAlign="center">
+                We sent a 6-digit code to{'\n'}
+                <Text fontWeight="600" color="$gray700">
+                  {maskDestination()}
+                </Text>
+              </Text>
+              {isSignup === 'true' && name && (
+                <Text fontSize="$3" color="$gray400" marginTop="$2">
+                  Creating account for {name}
+                </Text>
+              )}
+            </YStack>
+
+            {/* Error Message */}
+            {error && (
+              <YStack
+                backgroundColor="$errorLight"
+                padding="$3"
+                borderRadius="$3"
+              >
+                <Text color="$error" textAlign="center">
+                  {error}
+                </Text>
+              </YStack>
+            )}
+
+            {/* OTP Input */}
+            <XStack justifyContent="center" gap="$2">
+              {otp.map((digit, index) => (
+                <Input
+                  key={index}
+                  ref={(ref) => (inputRefs.current[index] = ref)}
+                  value={digit}
+                  onChangeText={(text) => handleOtpChange(text, index)}
+                  onKeyPress={(e) => handleKeyPress(e, index)}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  textAlign="center"
+                  fontSize="$7"
+                  fontWeight="700"
+                  width={48}
+                  height={56}
+                  borderRadius="$3"
+                  borderWidth={2}
+                  borderColor={digit ? '$primary' : '$gray300'}
+                  focusStyle={{
+                    borderColor: '$primary',
+                  }}
+                  editable={!isLoading}
+                />
+              ))}
+            </XStack>
+
+            {/* Verify Button */}
+            <Button
+              onPress={() => handleVerify(otp.join(''))}
+              loading={isLoading}
+              disabled={isLoading || otp.join('').length !== OTP_LENGTH}
+              size="lg"
+              fullWidth
+            >
+              {getButtonText()}
+            </Button>
+
+            {/* Resend Code */}
+            <YStack alignItems="center" gap="$2">
+              <Text color="$gray500">Didn't receive the code?</Text>
+              {resendCooldown > 0 ? (
+                <Text color="$gray400">
+                  Resend in {resendCooldown}s
+                </Text>
+              ) : (
+                <Button
+                  variant="ghost"
+                  onPress={handleResend}
+                  loading={isResending}
+                  disabled={isResending}
+                >
+                  <Text color="$primary" fontWeight="600">
+                    Resend Code
+                  </Text>
+                </Button>
+              )}
+            </YStack>
+          </YStack>
+        </YStack>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 ```
 
-### 3. Visual Design Guidelines
+### 4. Validation Schema
 
-```
-┌─────────────────────────────────────────────────┐
-│                                                 │
-│              Create Account                     │
-│    Join 231Booking to discover and book        │
-│           amazing services                      │
-│                                                 │
-│  ┌─────────────────────────────────────────┐   │
-│  │  👤  Enter your full name               │   │
-│  └─────────────────────────────────────────┘   │
-│                                                 │
-│  ┌─────────────────────────────────────────┐   │
-│  │  📧  Enter your email                   │   │
-│  └─────────────────────────────────────────┘   │
-│                                                 │
-│  ┌─────────────────────────────────────────┐   │
-│  │  🔒  Create a password            👁   │   │
-│  └─────────────────────────────────────────┘   │
-│                                                 │
-│    ✓ At least 8 characters                     │
-│    ✓ One uppercase letter                      │
-│    ✗ One lowercase letter                      │
-│    ✗ One number                                │
-│                                                 │
-│  ┌─────────────────────────────────────────┐   │
-│  │  🔒  Confirm your password        👁   │   │
-│  └─────────────────────────────────────────┘   │
-│                                                 │
-│  By signing up, you agree to our Terms of      │
-│  Service and Privacy Policy                    │
-│                                                 │
-│  ┌─────────────────────────────────────────┐   │
-│  │          CREATE ACCOUNT                 │   │
-│  └─────────────────────────────────────────┘   │
-│                                                 │
-│      Sign up with phone number instead         │
-│                                                 │
-│        Already have an account? Log In         │
-│                                                 │
-└─────────────────────────────────────────────────┘
+**File**: `lib/validations/auth.ts` (add)
+
+```typescript
+import { z } from 'zod';
+
+// Email signup schema
+export const emailSignupSchema = z.object({
+  name: z
+    .string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(50, 'Name must be less than 50 characters')
+    .regex(/^[a-zA-Z\s'-]+$/, 'Name can only contain letters, spaces, hyphens, and apostrophes'),
+  email: z
+    .string()
+    .min(1, 'Email is required')
+    .email('Please enter a valid email address'),
+});
+
+export type EmailSignupFormData = z.infer<typeof emailSignupSchema>;
 ```
 
-### 4. Features to Implement
+### 5. Visual Design Guidelines
 
-1. **Form Fields**
-   - Full name input
-   - Email input
-   - Password input with visibility toggle
-   - Confirm password input with visibility toggle
+**Email Signup Screen:**
+```
++--------------------------------------------------+
+|                                                  |
+|              Create Account                      |
+|    Join 231Booking to discover and book         |
+|           amazing services                       |
+|                                                  |
+|  Full Name                                       |
+|  +------------------------------------------+   |
+|  |  [user]  Enter your full name            |   |
+|  +------------------------------------------+   |
+|                                                  |
+|  Email Address                                   |
+|  +------------------------------------------+   |
+|  |  [mail]  Enter your email                |   |
+|  +------------------------------------------+   |
+|                                                  |
+|  +------------------------------------------+   |
+|  | We'll send a 6-digit verification code  |   |
+|  |           to your email                  |   |
+|  +------------------------------------------+   |
+|                                                  |
+|  By signing up, you agree to our Terms of       |
+|  Service and Privacy Policy                      |
+|                                                  |
+|  +------------------------------------------+   |
+|  |       SEND VERIFICATION CODE             |   |
+|  +------------------------------------------+   |
+|                                                  |
+|      Sign up with phone number instead          |
+|                                                  |
+|        Already have an account? Log In          |
+|                                                  |
++--------------------------------------------------+
+```
 
-2. **Password Requirements Display**
-   - Visual checklist showing password requirements
-   - Real-time updates as user types
-   - Green checkmarks for met requirements
-   - Gray X for unmet requirements
-
-3. **Form Validation**
-   - Name: min 2 chars, max 50 chars
-   - Email: valid format
-   - Password: min 8 chars, uppercase, lowercase, number
-   - Confirm password: must match
-
-4. **Error Handling**
-   - Display API errors (email exists, network issues)
-   - Clear error on retry
-   - Field-level validation errors
-
-5. **Navigation**
-   - Link to phone signup
-   - Link to login screen
-   - Redirect to main app on success
+**OTP Verification (Signup Flow):**
+```
++--------------------------------------------------+
+|  <- Back                                         |
+|                                                  |
+|                   [mail]                         |
+|                  (icon)                          |
+|                                                  |
+|            Verify Your Email                     |
+|                                                  |
+|          We sent a 6-digit code to              |
+|               jo***n@email.com                   |
+|                                                  |
+|          Creating account for John Doe           |
+|                                                  |
+|     +---+ +---+ +---+ +---+ +---+ +---+         |
+|     | 1 | | 2 | | 3 | | 4 | | 5 | | 6 |         |
+|     +---+ +---+ +---+ +---+ +---+ +---+         |
+|                                                  |
+|  +------------------------------------------+   |
+|  |       VERIFY & CREATE ACCOUNT            |   |
+|  +------------------------------------------+   |
+|                                                  |
+|        Didn't receive the code?                 |
+|              Resend Code                        |
+|                                                  |
++--------------------------------------------------+
+```
 
 ## Acceptance Criteria
 
 - [ ] Screen renders at `/(auth)/signup` route
-- [ ] All form fields render with proper validation
-- [ ] Password requirements show real-time feedback
-- [ ] Passwords must match validation works
-- [ ] Form submits and creates account with Appwrite
-- [ ] Error message displays for existing email
-- [ ] Loading state shown during account creation
+- [ ] Name input validates (2-50 chars, letters/spaces only)
+- [ ] Email input validates format
+- [ ] "Send Verification Code" calls Appwrite createEmailToken
+- [ ] OTP screen receives userId, destination, name, and isSignup flag
+- [ ] OTP verification creates account for new users
+- [ ] User's name is set after account creation
+- [ ] Successful verification creates session and navigates to app
+- [ ] Error messages display for invalid OTP or existing accounts
 - [ ] Link to phone signup works
 - [ ] Link to login screen works
-- [ ] Successful signup redirects to main app
 - [ ] Terms and privacy policy text displays
 
 ## Testing Checklist
 
-- [ ] Valid form data creates account successfully
+- [ ] Valid name and email sends OTP
 - [ ] Invalid name shows validation error
 - [ ] Invalid email shows validation error
-- [ ] Weak password shows requirement failures
-- [ ] Mismatched passwords show error
-- [ ] Existing email shows API error
-- [ ] Network error shows appropriate message
-- [ ] Password toggle shows/hides password
-- [ ] Links navigate to correct screens
+- [ ] OTP verification creates new account
+- [ ] User's name is properly set
+- [ ] Existing email redirects to login (or shows appropriate message)
+- [ ] Invalid OTP shows error and clears input
+- [ ] Resend code works correctly
+- [ ] Navigation links work correctly
 - [ ] Screen accessible via screen reader
 
 ## Files to Create/Modify
 
 | File | Action | Description |
 |------|--------|-------------|
-| `app/(auth)/signup.tsx` | Create | Signup screen component |
+| `app/(auth)/signup.tsx` | Create | Email signup screen |
+| `app/(auth)/verify-otp.tsx` | Modify | Add signup flow handling |
+| `lib/validations/auth.ts` | Modify | Add email signup schema |
 
 ## Files to Reference
 
-- `lib/validations/auth.ts` - Signup schema (FOUND-005)
-- `lib/auth/AuthContext.tsx` - Signup function (FOUND-003)
+- `lib/appwrite/client.ts` - account.createEmailToken, updateName (FOUND-003)
 - `lib/appwrite/errors.ts` - Error handling (FOUND-003)
+- `lib/auth/AuthContext.tsx` - refreshUser function (FOUND-003)
 - `components/ui/Button.tsx` - Button component (FOUND-004)
 - `components/forms/FormInput.tsx` - Form input (FOUND-005)
+- `app/(auth)/verify-otp.tsx` - Shared OTP verification (AUTH-001)
 
 ## Notes for AI Agent
 
-- The PasswordRequirements component should be defined in the same file or extracted to components
-- Password requirements must match the Zod schema in auth.ts
-- Consider extracting PasswordRequirements to a separate component file for reuse
-- Ensure form scrolls properly on small screens
-- Test with long names to ensure input handles overflow
+- Appwrite OTP flow automatically creates accounts for new email addresses
+- The `userId` returned from `createEmailToken` is the new user's ID
+- After `createSession`, call `account.updateName()` to set the user's name
+- The name update is non-critical - if it fails, user can update later in profile
+- Consider showing a different title/button text for signup vs login OTP flows
+- The OTP screen is shared between login (AUTH-001) and signup - use params to differentiate
+- No password is needed - this is fully passwordless authentication
