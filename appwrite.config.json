@@ -1,0 +1,2042 @@
+{
+    "projectId": "695507500015cce944c3",
+    "endpoint": "https://fra.cloud.appwrite.io/v1",
+    "projectName": "231booking",
+    "settings": {
+        "services": {
+            "account": true,
+            "avatars": true,
+            "databases": true,
+            "locale": true,
+            "health": true,
+            "storage": true,
+            "teams": true,
+            "users": true,
+            "sites": true,
+            "functions": true,
+            "graphql": true,
+            "messaging": true
+        },
+        "auth": {
+            "methods": {
+                "jwt": true,
+                "phone": true,
+                "invites": true,
+                "anonymous": true,
+                "email-otp": true,
+                "magic-url": true,
+                "email-password": true
+            },
+            "security": {
+                "duration": 31536000,
+                "limit": 0,
+                "sessionsLimit": 10,
+                "passwordHistory": 0,
+                "passwordDictionary": false,
+                "personalDataCheck": false,
+                "sessionAlerts": false,
+                "mockNumbers": []
+            }
+        }
+    },
+    "databases": [
+        {
+            "$id": "231booking_db",
+            "name": "231Booking Database",
+            "enabled": true
+        }
+    ],
+    "collections": [
+        {
+            "$id": "users",
+            "$permissions": [
+                "read(\"users\")",
+                "create(\"users\")",
+                "update(\"users\")"
+            ],
+            "databaseId": "231booking_db",
+            "name": "Users",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "authId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "email",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "phone",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 20,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "avatarUrl",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 2048,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "notificationPreferences",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "pushToken",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "userType",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "elements": [
+                        "basic",
+                        "business",
+                        "admin"
+                    ],
+                    "format": "enum",
+                    "default": "basic"
+                },
+                {
+                    "key": "isActive",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": true
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "authId_idx",
+                    "type": "unique",
+                    "status": "available",
+                    "attributes": [
+                        "authId"
+                    ],
+                    "orders": []
+                },
+                {
+                    "key": "email_idx",
+                    "type": "unique",
+                    "status": "available",
+                    "attributes": [
+                        "email"
+                    ],
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "business_profiles",
+            "$permissions": [
+                "read(\"users\")",
+                "create(\"users\")",
+                "update(\"users\")"
+            ],
+            "databaseId": "231booking_db",
+            "name": "Business Profiles",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "businessName",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "description",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 5000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "logoUrl",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 2048,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "coverImageUrl",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 2048,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "contactEmail",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "contactPhone",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 20,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "address",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 500,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "city",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "payoutMethod",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "elements": [
+                        "stripe",
+                        "orange_money",
+                        "mtn_money"
+                    ],
+                    "format": "enum",
+                    "default": null
+                },
+                {
+                    "key": "payoutDetails",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "isVerified",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": false
+                },
+                {
+                    "key": "isActive",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": true
+                },
+                {
+                    "key": "totalEarnings",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": 0
+                },
+                {
+                    "key": "availableBalance",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": 0
+                },
+                {
+                    "key": "rating",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": 0
+                },
+                {
+                    "key": "reviewCount",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807,
+                    "default": 0
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "userId_idx",
+                    "type": "unique",
+                    "status": "available",
+                    "attributes": [
+                        "userId"
+                    ],
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "categories",
+            "$permissions": [
+                "read(\"any\")"
+            ],
+            "databaseId": "231booking_db",
+            "name": "Categories",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "name",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "slug",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "description",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 500,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "iconName",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "imageUrl",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 2048,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "isActive",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": true
+                },
+                {
+                    "key": "sortOrder",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807,
+                    "default": 0
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "slug_idx",
+                    "type": "unique",
+                    "status": "available",
+                    "attributes": [
+                        "slug"
+                    ],
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "listings",
+            "$permissions": [
+                "read(\"any\")",
+                "create(\"users\")",
+                "update(\"users\")"
+            ],
+            "databaseId": "231booking_db",
+            "name": "Listings",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "businessId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "categoryId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "title",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "description",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 10000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "shortDescription",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 500,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "price",
+                    "type": "double",
+                    "required": true,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": null
+                },
+                {
+                    "key": "priceType",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "elements": [
+                        "fixed",
+                        "per_hour",
+                        "per_night",
+                        "per_person",
+                        "per_day"
+                    ],
+                    "format": "enum",
+                    "default": null
+                },
+                {
+                    "key": "address",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 500,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "city",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "latitude",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": null
+                },
+                {
+                    "key": "longitude",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": null
+                },
+                {
+                    "key": "availabilityStart",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "availabilityEnd",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "availableDays",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 200,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "availableTimeStart",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 5,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "availableTimeEnd",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 5,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "maxGuests",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807,
+                    "default": null
+                },
+                {
+                    "key": "tags",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 500,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "currency",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 3,
+                    "default": "USD",
+                    "encrypt": false
+                },
+                {
+                    "key": "country",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 100,
+                    "default": "Liberia",
+                    "encrypt": false
+                },
+                {
+                    "key": "isActive",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": true
+                },
+                {
+                    "key": "isFeatured",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": false
+                },
+                {
+                    "key": "isPaused",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": false
+                },
+                {
+                    "key": "rating",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": 0
+                },
+                {
+                    "key": "reviewCount",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807,
+                    "default": 0
+                },
+                {
+                    "key": "bookingCount",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807,
+                    "default": 0
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "businessId_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "businessId"
+                    ],
+                    "orders": []
+                },
+                {
+                    "key": "categoryId_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "categoryId"
+                    ],
+                    "orders": []
+                },
+                {
+                    "key": "city_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "city"
+                    ],
+                    "orders": []
+                },
+                {
+                    "key": "price_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "price"
+                    ],
+                    "orders": []
+                },
+                {
+                    "key": "search_idx",
+                    "type": "fulltext",
+                    "status": "available",
+                    "attributes": [
+                        "title",
+                        "description"
+                    ],
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "listing_images",
+            "$permissions": [
+                "read(\"any\")",
+                "create(\"users\")",
+                "update(\"users\")"
+            ],
+            "databaseId": "231booking_db",
+            "name": "Listing Images",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "listingId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "imageUrl",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 2048,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "caption",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "sortOrder",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807,
+                    "default": 0
+                },
+                {
+                    "key": "isPrimary",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "listingId_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "listingId"
+                    ],
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "bookings",
+            "$permissions": [
+                "read(\"users\")",
+                "create(\"users\")",
+                "update(\"users\")"
+            ],
+            "databaseId": "231booking_db",
+            "name": "Bookings",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "listingId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "businessId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "bookingDate",
+                    "type": "datetime",
+                    "required": true,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "startTime",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 5,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "endTime",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 5,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "checkInDate",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "checkOutDate",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "specialRequests",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "basePrice",
+                    "type": "double",
+                    "required": true,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": null
+                },
+                {
+                    "key": "totalAmount",
+                    "type": "double",
+                    "required": true,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": null
+                },
+                {
+                    "key": "confirmedAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "completedAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "cancelledAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "cancellationReason",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 500,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "cancelledBy",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "guestName",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "guestEmail",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "guestPhone",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 20,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "guestCount",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807,
+                    "default": 1
+                },
+                {
+                    "key": "serviceFee",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": 0
+                },
+                {
+                    "key": "taxes",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": 0
+                },
+                {
+                    "key": "currency",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 3,
+                    "default": "USD",
+                    "encrypt": false
+                },
+                {
+                    "key": "status",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "elements": [
+                        "pending",
+                        "confirmed",
+                        "completed",
+                        "cancelled",
+                        "rejected"
+                    ],
+                    "format": "enum",
+                    "default": "pending"
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "userId_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "userId"
+                    ],
+                    "orders": []
+                },
+                {
+                    "key": "listingId_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "listingId"
+                    ],
+                    "orders": []
+                },
+                {
+                    "key": "businessId_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "businessId"
+                    ],
+                    "orders": []
+                },
+                {
+                    "key": "bookingDate_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "bookingDate"
+                    ],
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "payments",
+            "$permissions": [
+                "read(\"users\")",
+                "create(\"users\")",
+                "update(\"users\")"
+            ],
+            "databaseId": "231booking_db",
+            "name": "Payments",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "bookingId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "amount",
+                    "type": "double",
+                    "required": true,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": null
+                },
+                {
+                    "key": "totalAmount",
+                    "type": "double",
+                    "required": true,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": null
+                },
+                {
+                    "key": "paymentMethod",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "elements": [
+                        "stripe",
+                        "orange_money",
+                        "mtn_money"
+                    ],
+                    "format": "enum",
+                    "default": null
+                },
+                {
+                    "key": "transactionId",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "paymentProviderResponse",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 5000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "refundAmount",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": null
+                },
+                {
+                    "key": "refundedAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "refundReason",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 500,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "serviceFee",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": 0
+                },
+                {
+                    "key": "taxes",
+                    "type": "double",
+                    "required": false,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": 0
+                },
+                {
+                    "key": "currency",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 3,
+                    "default": "USD",
+                    "encrypt": false
+                },
+                {
+                    "key": "paymentStatus",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "elements": [
+                        "pending",
+                        "completed",
+                        "failed",
+                        "refunded",
+                        "partially_refunded"
+                    ],
+                    "format": "enum",
+                    "default": "pending"
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "bookingId_idx",
+                    "type": "unique",
+                    "status": "available",
+                    "attributes": [
+                        "bookingId"
+                    ],
+                    "orders": []
+                },
+                {
+                    "key": "userId_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "userId"
+                    ],
+                    "orders": []
+                },
+                {
+                    "key": "transactionId_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "transactionId"
+                    ],
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "reviews",
+            "$permissions": [
+                "read(\"any\")",
+                "create(\"users\")",
+                "update(\"users\")"
+            ],
+            "databaseId": "231booking_db",
+            "name": "Reviews",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "listingId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "bookingId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "rating",
+                    "type": "integer",
+                    "required": true,
+                    "array": false,
+                    "min": 1,
+                    "max": 5,
+                    "default": null
+                },
+                {
+                    "key": "title",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "comment",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 2000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "businessResponse",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "businessRespondedAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "isApproved",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": true
+                },
+                {
+                    "key": "isHidden",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": false
+                },
+                {
+                    "key": "helpfulCount",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807,
+                    "default": 0
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "listingId_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "listingId"
+                    ],
+                    "orders": []
+                },
+                {
+                    "key": "userId_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "userId"
+                    ],
+                    "orders": []
+                },
+                {
+                    "key": "bookingId_idx",
+                    "type": "unique",
+                    "status": "available",
+                    "attributes": [
+                        "bookingId"
+                    ],
+                    "orders": []
+                },
+                {
+                    "key": "rating_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "rating"
+                    ],
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "review_images",
+            "$permissions": [
+                "read(\"any\")",
+                "create(\"users\")"
+            ],
+            "databaseId": "231booking_db",
+            "name": "Review Images",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "reviewId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "imageUrl",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 2048,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "sortOrder",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "min": -9223372036854775808,
+                    "max": 9223372036854775807,
+                    "default": 0
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "reviewId_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "reviewId"
+                    ],
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "notifications",
+            "$permissions": [
+                "read(\"users\")",
+                "create(\"users\")",
+                "update(\"users\")"
+            ],
+            "databaseId": "231booking_db",
+            "name": "Notifications",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "type",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "elements": [
+                        "booking_confirmation",
+                        "booking_reminder",
+                        "booking_status_update",
+                        "booking_cancelled",
+                        "new_booking_request",
+                        "new_review",
+                        "payout_completed",
+                        "promotional",
+                        "system"
+                    ],
+                    "format": "enum",
+                    "default": null
+                },
+                {
+                    "key": "title",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "message",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 1000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "data",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 2000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "readAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "isRead",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "userId_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "userId"
+                    ],
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "saved_payment_methods",
+            "$permissions": [
+                "read(\"users\")",
+                "create(\"users\")",
+                "update(\"users\")",
+                "delete(\"users\")"
+            ],
+            "databaseId": "231booking_db",
+            "name": "Saved Payment Methods",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "type",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "elements": [
+                        "stripe",
+                        "orange_money",
+                        "mtn_money"
+                    ],
+                    "format": "enum",
+                    "default": null
+                },
+                {
+                    "key": "label",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "tokenizedData",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 1000,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "expiresAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "isDefault",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": false
+                },
+                {
+                    "key": "isActive",
+                    "type": "boolean",
+                    "required": false,
+                    "array": false,
+                    "default": true
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "userId_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "userId"
+                    ],
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "payouts",
+            "$permissions": [
+                "read(\"users\")",
+                "create(\"users\")",
+                "update(\"users\")"
+            ],
+            "databaseId": "231booking_db",
+            "name": "Payouts",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "businessId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "amount",
+                    "type": "double",
+                    "required": true,
+                    "array": false,
+                    "min": -1.7976931348623157e+308,
+                    "max": 1.7976931348623157e+308,
+                    "default": null
+                },
+                {
+                    "key": "payoutMethod",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "elements": [
+                        "stripe",
+                        "orange_money",
+                        "mtn_money"
+                    ],
+                    "format": "enum",
+                    "default": null
+                },
+                {
+                    "key": "payoutDetails",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "transactionId",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "processedAt",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "failureReason",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 500,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "currency",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 3,
+                    "default": "USD",
+                    "encrypt": false
+                },
+                {
+                    "key": "status",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "elements": [
+                        "pending",
+                        "processing",
+                        "completed",
+                        "failed"
+                    ],
+                    "format": "enum",
+                    "default": "pending"
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "businessId_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "businessId"
+                    ],
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "favorites",
+            "$permissions": [
+                "read(\"users\")",
+                "create(\"users\")",
+                "delete(\"users\")"
+            ],
+            "databaseId": "231booking_db",
+            "name": "Favorites",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "listingId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "userId_idx",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "userId"
+                    ],
+                    "orders": []
+                },
+                {
+                    "key": "user_listing_idx",
+                    "type": "unique",
+                    "status": "available",
+                    "attributes": [
+                        "userId",
+                        "listingId"
+                    ],
+                    "orders": []
+                }
+            ]
+        },
+        {
+            "$id": "user_profiles",
+            "$permissions": [
+                "read(\"user:userId\")",
+                "update(\"user:userId\")",
+                "create(\"users\")",
+                "read(\"team:admins\")",
+                "update(\"team:admins\")",
+                "delete(\"team:admins\")"
+            ],
+            "databaseId": "231booking_db",
+            "name": "User Profiles",
+            "enabled": true,
+            "documentSecurity": true,
+            "attributes": [
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 36,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "fullName",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 100,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "displayName",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "bio",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 500,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "phone",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 20,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "email",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "avatar",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "dateOfBirth",
+                    "type": "datetime",
+                    "required": false,
+                    "array": false,
+                    "format": "",
+                    "default": null
+                },
+                {
+                    "key": "city",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 50,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "address",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "preferredPaymentMethod",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 20,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "accountStatus",
+                    "type": "string",
+                    "required": true,
+                    "array": false,
+                    "elements": [
+                        "active",
+                        "suspended",
+                        "inactive"
+                    ],
+                    "format": "enum",
+                    "default": null
+                },
+                {
+                    "key": "notificationPreferences",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1000,
+                    "default": "{}",
+                    "encrypt": false
+                },
+                {
+                    "key": "bookingCount",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "min": 0,
+                    "max": 999999,
+                    "default": 0
+                },
+                {
+                    "key": "reviewCount",
+                    "type": "integer",
+                    "required": false,
+                    "array": false,
+                    "min": 0,
+                    "max": 999999,
+                    "default": 0
+                }
+            ],
+            "indexes": [
+                {
+                    "key": "userId_unique",
+                    "type": "unique",
+                    "status": "available",
+                    "attributes": [
+                        "userId"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "email_index",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "email"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "accountStatus_index",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "accountStatus"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                },
+                {
+                    "key": "createdAt_index",
+                    "type": "key",
+                    "status": "available",
+                    "attributes": [
+                        "$createdAt"
+                    ],
+                    "orders": [
+                        "ASC"
+                    ]
+                }
+            ]
+        },
+        {
+            "$id": "notification_preferences",
+            "$permissions": [
+                "read(\"users\")",
+                "create(\"users\")",
+                "update(\"users\")"
+            ],
+            "databaseId": "231booking_db",
+            "name": "Notification Preferences",
+            "enabled": true,
+            "documentSecurity": false,
+            "attributes": [
+                {
+                    "key": "userId",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 255,
+                    "default": null,
+                    "encrypt": false
+                },
+                {
+                    "key": "preferences",
+                    "type": "string",
+                    "required": false,
+                    "array": false,
+                    "size": 1000,
+                    "default": null,
+                    "encrypt": false
+                }
+            ],
+            "indexes": []
+        }
+    ],
+    "buckets": [
+        {
+            "$id": "profile-images",
+            "$permissions": [
+                "create(\"users\")",
+                "update(\"users\")",
+                "delete(\"users\")"
+            ],
+            "fileSecurity": false,
+            "name": "profile-images",
+            "enabled": true,
+            "maximumFileSize": 50000000,
+            "allowedFileExtensions": [
+                "jpg",
+                "png",
+                "webp",
+                "jpeg"
+            ],
+            "compression": "none",
+            "encryption": true,
+            "antivirus": true
+        }
+    ]
+}
