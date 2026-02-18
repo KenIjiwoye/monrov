@@ -50,8 +50,8 @@
         {
             "$id": "users",
             "$permissions": [
-                "read(\"users\")",
                 "create(\"users\")",
+                "read(\"users\")",
                 "update(\"users\")"
             ],
             "databaseId": "231booking_db",
@@ -167,8 +167,8 @@
         {
             "$id": "business_profiles",
             "$permissions": [
-                "read(\"users\")",
                 "create(\"users\")",
+                "read(\"users\")",
                 "update(\"users\")"
             ],
             "databaseId": "231booking_db",
@@ -345,7 +345,9 @@
         {
             "$id": "categories",
             "$permissions": [
-                "read(\"any\")"
+                "read(\"any\")",
+                "update(\"any\")",
+                "delete(\"any\")"
             ],
             "databaseId": "231booking_db",
             "name": "Categories",
@@ -431,7 +433,8 @@
             "$permissions": [
                 "read(\"any\")",
                 "create(\"users\")",
-                "update(\"users\")"
+                "update(\"users\")",
+                "delete(\"users\")"
             ],
             "databaseId": "231booking_db",
             "name": "Listings",
@@ -669,6 +672,18 @@
                     "min": -9223372036854775808,
                     "max": 9223372036854775807,
                     "default": 0
+                },
+                {
+                    "key": "listingImages",
+                    "type": "relationship",
+                    "required": false,
+                    "array": false,
+                    "relatedCollection": "listing_images",
+                    "relationType": "oneToMany",
+                    "twoWay": false,
+                    "twoWayKey": "6995d7f40007313a34c0",
+                    "onDelete": "cascade",
+                    "side": "parent"
                 }
             ],
             "indexes": [
@@ -725,7 +740,8 @@
             "$permissions": [
                 "read(\"any\")",
                 "create(\"users\")",
-                "update(\"users\")"
+                "update(\"users\")",
+                "delete(\"users\")"
             ],
             "databaseId": "231booking_db",
             "name": "Listing Images",
@@ -791,8 +807,8 @@
         {
             "$id": "bookings",
             "$permissions": [
-                "read(\"users\")",
                 "create(\"users\")",
+                "read(\"users\")",
                 "update(\"users\")"
             ],
             "databaseId": "231booking_db",
@@ -1059,8 +1075,8 @@
         {
             "$id": "payments",
             "$permissions": [
-                "read(\"users\")",
                 "create(\"users\")",
+                "read(\"users\")",
                 "update(\"users\")"
             ],
             "databaseId": "231booking_db",
@@ -1434,8 +1450,8 @@
         {
             "$id": "notifications",
             "$permissions": [
-                "read(\"users\")",
                 "create(\"users\")",
+                "read(\"users\")",
                 "update(\"users\")"
             ],
             "databaseId": "231booking_db",
@@ -1529,8 +1545,8 @@
         {
             "$id": "saved_payment_methods",
             "$permissions": [
-                "read(\"users\")",
                 "create(\"users\")",
+                "read(\"users\")",
                 "update(\"users\")",
                 "delete(\"users\")"
             ],
@@ -1617,8 +1633,8 @@
         {
             "$id": "payouts",
             "$permissions": [
-                "read(\"users\")",
                 "create(\"users\")",
+                "read(\"users\")",
                 "update(\"users\")"
             ],
             "databaseId": "231booking_db",
@@ -1731,8 +1747,9 @@
         {
             "$id": "favorites",
             "$permissions": [
-                "read(\"users\")",
                 "create(\"users\")",
+                "read(\"users\")",
+                "update(\"users\")",
                 "delete(\"users\")"
             ],
             "databaseId": "231booking_db",
@@ -1985,8 +2002,8 @@
         {
             "$id": "notification_preferences",
             "$permissions": [
-                "read(\"users\")",
                 "create(\"users\")",
+                "read(\"users\")",
                 "update(\"users\")"
             ],
             "databaseId": "231booking_db",
