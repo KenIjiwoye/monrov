@@ -1,0 +1,3 @@
+[submodule "monrov-mobile"]
+	path = monrov-mobile
+	url = git@github.com:KenIjiwoye/monrov-mobile.git
