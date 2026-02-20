@@ -22,4 +22,4 @@ Appwrite Cloud Functions are deployed independently — there is no native mecha
    ```
 3. Redeploy affected functions
 
-Always edit `_shared/` first — never edit the copies directly, or they will drift out of sync.
+Always edit `_shared/` first — never edit the copies directly, or they will drift out of sync..
