@@ -1214,10 +1214,27 @@
                         "completed",
                         "failed",
                         "refunded",
-                        "partially_refunded"
+                        "partially_refunded",
+                        "processing"
                     ],
                     "format": "enum",
                     "default": "pending"
+                },
+                {
+                    "key": "phone",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": null
+                },
+                {
+                    "key": "errorMessage",
+                    "type": "text",
+                    "required": false,
+                    "array": false,
+                    "default": null,
+                    "encrypt": null
                 }
             ],
             "indexes": [
