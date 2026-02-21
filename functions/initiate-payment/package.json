@@ -1,0 +1,10 @@
+{
+  "name": "initiate-payment",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/main.js",
+  "dependencies": {
+    "node-appwrite": "^20.2.1",
+    "uuid": "^10.0.0"
+  }
+}
